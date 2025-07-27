@@ -1,0 +1,9 @@
+make,model,avg_insurance_per_year,avg_maintenance_per_year,fuel_type,efficiency,depreciation_year_1,depreciation_year_2,depreciation_year_3,depreciation_year_4,depreciation_year_5,depreciation_year_6,depreciation_year_7
+Honda,Civic,1850,650,Gas,33,0.88,0.78,0.69,0.61,0.54,0.48,0.43
+Ford,F-150,2200,800,Gas,20,0.85,0.75,0.67,0.6,0.53,0.47,0.42
+Tesla,Model 3,2500,400,Electric,25,0.9,0.82,0.75,0.68,0.62,0.57,0.52
+Toyota,RAV4,1750,550,Gas,30,0.89,0.8,0.72,0.65,0.58,0.51,0.46
+Jeep,Wrangler,1900,750,Gas,22,0.91,0.84,0.78,0.72,0.66,0.6,0.55
+BMW,3 Series,2400,900,Gas,29,0.82,0.71,0.62,0.54,0.47,0.41,0.36
+Hyundai,Elantra,1800,600,Gas,35,0.87,0.77,0.68,0.6,0.53,0.47,0.41
+Subaru,Outback,1700,700,Gas,45,0.88,0.79,0.71,0.64,0.57,0.5,0.45
