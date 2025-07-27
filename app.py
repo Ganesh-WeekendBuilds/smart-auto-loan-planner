@@ -112,29 +112,34 @@ if model and model_cols and vehicle_db:
     with st.sidebar:
         st.title("Loan Configurator")
         st.header("1. Vehicle & Loan")
-        # Adjusted defaults to better showcase the 'underwater' feature
         vehicle_price = st.slider("Vehicle Price ($)", 5000, 100000, 40000, 1000)
         down_payment = st.slider("Down Payment ($)", 0, vehicle_price, 4000, 500)
-        loan_term = st.selectbox("Loan Term (Years)", [3, 4, 5, 6, 7], index=3) # Default to 6 years
+        loan_term = st.selectbox("Loan Term (Years)", [3, 4, 5, 6, 7], index=3)
 
         st.header("2. Your Financial Profile")
         credit_score_map = {
             "Excellent: 780+": 800, "Good: 720-779": 750, "Average: 660-719": 690,
             "Fair: 600-659": 630, "Poor: <600": 580
         }
-        credit_score_label = st.selectbox("Credit Score", list(credit_score_map.keys()), index=2) # Default to Average
+        credit_score_label = st.selectbox("Credit Score", list(credit_score_map.keys()), index=2)
         credit_score_value = credit_score_map[credit_score_label]
         
         monthly_income = st.number_input("Gross Monthly Income ($)", min_value=0, value=6000, step=100, help="Unlocks Affordability Analysis.")
         
         st.header("3. Cost Assumptions")
         vehicle_model_list = list(vehicle_db.df.index)
-        # Default to a model with higher depreciation
         default_model = 'BMW 3 Series'
         default_index = vehicle_model_list.index(default_model) if default_model in vehicle_model_list else 0
         vehicle_model = st.selectbox("Vehicle Model", vehicle_model_list, index=default_index)
         
+        # --- THIS IS THE KEY FIX AREA ---
         vehicle_info = vehicle_db.get_vehicle_info(vehicle_model)
+        
+        # Safety check to prevent crash if vehicle_info is None
+        if vehicle_info is None:
+            st.error(f"Could not find data for '{vehicle_model}'. Please check your `vehicle_data.csv` file.")
+            st.stop() # Stop the app from running further
+
         fuel_type = vehicle_info.get('fuel_type', 'Gas')
         
         if fuel_type == 'Gas':
@@ -146,7 +151,7 @@ if model and model_cols and vehicle_db:
 
     # --- Calculations ---
     principal = vehicle_price - down_payment
-    vehicle_type = "Used" if "Used" in credit_score_label else "New" # Simple assumption
+    vehicle_type = "Used" if "Used" in credit_score_label else "New"
     input_data = {
         'credit_score': [credit_score_value], 'loan_amount_usd': [principal],
         'loan_term_years': [loan_term], 'down_payment_percentage': [down_payment / vehicle_price if vehicle_price > 0 else 0],
@@ -161,7 +166,6 @@ if model and model_cols and vehicle_db:
     tco_breakdown = calculate_total_cost_of_ownership(vehicle_info, total_loan_cost, loan_term, gas_price, electricity_price)
     schedule_df = generate_amortization_and_depreciation(principal, predicted_rate, loan_term, emi, vehicle_price, vehicle_info)
     
-    # --- UPDATED: More robust calculation for underwater amount ---
     underwater_amounts = (schedule_df['Loan_Balance'] - schedule_df['Car_Value']).clip(lower=0)
     max_underwater = underwater_amounts.max()
 
@@ -170,7 +174,6 @@ if model and model_cols and vehicle_db:
     main_col1, main_col2 = st.columns([2, 1])
 
     with main_col1:
-        # --- Financial Summary ---
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("Financial Summary")
         m_col1, m_col2, m_col3 = st.columns(3)
@@ -182,7 +185,6 @@ if model and model_cols and vehicle_db:
             st.markdown(f'<div class="metric-card"><div class="title">Total Interest</div><div class="value">${total_interest:,.0f}</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # --- TCO and Depreciation Charts Side-by-Side ---
         chart_col1, chart_col2 = st.columns(2)
         with chart_col1:
             st.markdown('<div class="section-card">', unsafe_allow_html=True)
@@ -201,7 +203,6 @@ if model and model_cols and vehicle_db:
             st.markdown('<div class="section-card">', unsafe_allow_html=True)
             st.subheader("Depreciation vs. Loan")
             
-            # --- UPDATED: Conditional metric display ---
             if max_underwater > 0:
                 st.metric("Peak 'Underwater' Amount", f"${max_underwater:,.0f}", help="The highest amount you will owe more than the car is worth.", delta_color="inverse")
             else:
@@ -211,7 +212,6 @@ if model and model_cols and vehicle_db:
             fig_dep.add_trace(go.Scatter(x=schedule_df['Year'], y=schedule_df['Car_Value'], mode='lines', name='Car Value', line=dict(color='#22C55E', width=3), fill='tozeroy'))
             fig_dep.add_trace(go.Scatter(x=schedule_df['Year'], y=schedule_df['Loan_Balance'], mode='lines', name='Loan Balance', line=dict(color='#2563EB', width=3), fill='tozeroy'))
             
-            # Only show red shaded area if user is actually underwater
             if max_underwater > 0:
                 fig_dep.add_trace(go.Scatter(
                     x=schedule_df['Year'].tolist() + schedule_df['Year'].tolist()[::-1],
@@ -227,7 +227,6 @@ if model and model_cols and vehicle_db:
             st.markdown('</div>', unsafe_allow_html=True)
 
     with main_col2:
-        # --- Financial Health and How It Works Cards ---
         st.markdown('<div class="section-card">', unsafe_allow_html=True)
         st.subheader("Financial Health")
         if monthly_income and monthly_income > 0:
